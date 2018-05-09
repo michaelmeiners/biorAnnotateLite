@@ -1,0 +1,87 @@
+#!/bin/bash
+
+VCF=$1
+CATALOG_DRILL=$2
+OUTPUT=$3
+LOG_FILE=$4
+
+# On Mac, we'll want to run "gzcat -f" instead of "zcat -f" since "zcat" expects a file to end in ".Z"
+OS=`uname`
+ZCAT="zcat -f"
+if [ "$OS" == "Darwin" ] ; then
+  ZCAT="gzcat -f"
+fi
+
+
+if [ -z "$VCF" ] || [ -z "$CATALOG_DRILL" ] ; then
+  echo "USAGE:  biorAnnotateLite  <VCF>  <CATALOG_DRILL>  [OUTPUT]  [LOG_FILE]"
+  echo "  Required: VCF, CATALOG_DRILL"
+  echo "  Optional: OUTPUT, LOG_FILE"
+  echo ""
+  echo "Example:"
+  echo "  biorAnnotateLite  my.vcf  catalogDrill.txt  my.vcf.annotated.bgz"
+  echo ""
+  echo "  WHERE:"
+  echo "    catalogDrill.txt is a tab-delimited file with 3 columns like:"
+  echo "      #Operation	CatalogPath	DrillPaths"
+  echo "      bior_same_variant	/data5/bsi/catalogs/bior/v1/dbSNP/150_GRCh37.p13/variants.v1/All_dbSNP.tsv.bgz	ID,RSPOS,GENEINFO"
+  echo "      bior_overlap	/data5/bsi/catalogs/bior/v1/omim/20180104_GRCh37.p13/disease.v1/omim_genes.tsv.bgz	MIMNumber,ApprovedSymbol,EntrezGeneID,EnsemblGeneID,Transcript"
+  echo ""
+  echo "  The OUTPUT should be a file with a .bgz extension.  If not specified, a '.annot.bgz' extension will be added to the VCF input filename"
+  echo ""
+  echo "  LOG_FILE if specified will write any BioR command log statements to this file."
+  echo "    NOTE: OUTPUT flag is *required* if the LOG_FILE flag is specified, else the OUTPUT will be written to the LOG_FILE"
+  exit 1;
+fi
+
+
+#echo "VCF:           $VCF"
+#echo "CATALOG_DRILL: $CATALOG_DRILL"
+#echo "OUTPUT:        $OUTPUT"
+
+COLS=$($ZCAT  $VCF | head -2000 | grep -v "^##" | grep "^#" | tr '\t' '\n' | wc -l)
+VCF_TO_TJSON_COL=$(($COLS+1))
+#echo "COLS: $COLS"
+#echo "VCF_TO_TJSON_COL: $VCF_TO_TJSON_COL"
+
+# If the OUTPUT flag was NOT given, then create an output file with a ".annot.bgz" extension
+if [ -z "$OUTPUT" ] ; then
+  OUTPUT="$VCF.annot.bgz"
+fi
+
+# If the LOG_FILE flag is given, then use the --logfile flag with it
+LOG_FLAG=""
+if [ -n "$LOG_FILE" ] ; then
+  LOG_FLAG="--logfile  $LOG_FILE"
+fi
+
+CMD=""
+# Make newlines the only separator in FOR loop
+IFS=$'\n'
+# For each line in the CATALOG_DRILL file, create a bior_same_variant or bior_overlap command
+# with corresponding bior_drill to extract the columns
+for line in `cat $CATALOG_DRILL | grep -v "^#"`; do
+  #echo "line: $line"
+
+  OPERATION=$(echo $line | cut -f1)
+  CATALOG_PATH=$(echo $line | cut -f2)
+  DRILLS=$(echo $line | cut -f3 | sed 's/,/ -p /g')
+  SUBCMD="| $OPERATION  $LOG_FLAG  -c $VCF_TO_TJSON_COL  -d $CATALOG_PATH | bior_drill $LOG_FLAG  -p $DRILLS "
+  CMD="$CMD $SUBCMD"
+
+  #echo "OPERATION:    $OPERATION"
+  #echo "CATALOG_PATH: $CATALOG_PATH"
+  #echo "DRILLS:       $DRILLS"
+  #echo "SUBCMD:       $SUBCMD"
+  #echo "CMD:          $CMD"
+done
+
+
+# We should go from VCF to TJSON, run all same_variants/overlap commands, then go from TJSON back to VCF
+FULL_CMD="$ZCAT  $VCF | bior_vcf_to_tjson  $LOG_FLAG  $CMD  |  bior_tjson_to_vcf $LOG_FLAG  |  sed 's/bior.//g'  |  bgzip -c > $OUTPUT"
+#echo "FULL_CMD:"
+#echo "$FULL_CMD"
+
+
+eval "$FULL_CMD"
+
