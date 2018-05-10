@@ -1,32 +1,33 @@
-# biorAnnotateLite
-A very simple implementation of bior-annotate that runs interactively and uses the BioR toolkit commands
+# BioR Annotate Lite (bior_annotate_lite)
+**A very simple implementation of bior-annotate that runs interactively and uses the BioR toolkit commands**
 
-* Setup *
+# Setup
 1) Setup BioR, Bgzip, and biorAnnotateLite
-# Choose the latest version of BioR.  For example:
-export BIOR_LITE_HOME=/usr/local/biotools/bior_scripts/4.3.1/bior_pipeline-4.3.1
+Choose the latest version of BioR.  For example:
+> export BIOR_LITE_HOME=/usr/local/biotools/bior_scripts/4.3.1/bior_pipeline-4.3.1
 
-# Choose location of bgzip
-export BGZIP_DIR=/data5/bsi/bictools/src/htslib/1.4/bin
+Choose location of bgzip
+> export BGZIP_DIR=/data5/bsi/bictools/src/htslib/1.4/bin
 
-# Choose location of this biorAnnotateLite script
-export BIOR_ANNOTATE_LITE=/data5/bsi/BIOR/BiorAnnotateLite/1.0.0
+Choose location of this biorAnnotateLite script
+> export BIOR_ANNOTATE_LITE=/data5/bsi/BIOR/BiorAnnotateLite/1.0.0
 
-# Now, add all these to the path
-export PATH=$BIOR_LITE_HOME/bin:$BGZIP_DIR:$BIOR_ANNOTATE_LITE:$PATH
+Now, add all these to the path
+> export PATH=$BIOR_LITE_HOME/bin:$BGZIP_DIR:$BIOR_ANNOTATE_LITE:$PATH
 
 
 
 2) Run a test which shows how to run the script against a particular VCF and Catalog-Drill file
-$BIOR_ANNOTATE_LITE/Test/test.sh
+> $BIOR_ANNOTATE_LITE/Test/test.sh
 
 OR, run it directly:
-bior_annotate_lite  my.in.vcf catalogDrill.txt  my.out.vcf.bgz  my.log
+> bior_annotate_lite  my.in.vcf catalogDrill.txt  my.out.vcf.bgz  my.log
 
 
 
 3) Now, try your own!
 
+```
 #-----------------------------------------------------------
 # Working with a sample VCF 
 #-----------------------------------------------------------
@@ -54,4 +55,4 @@ cat catalogDrill.txt
 bior_same_variant       /data5/bsi/catalogs/bior/v1/dbSNP/150_GRCh37.p13/variants.v1/All_dbSNP.tsv.bgz  ID,RSPOS,dbSNPBuildId,GENEINFO
 bior_overlap    /data5/bsi/catalogs/bior/v1/omim/20180104_GRCh37.p13/disease.v1/omim_genes.tsv.bgz      MIMNumber,ApprovedSymbol,EntrezGeneID,EnsemblGeneID,Transcript
 
-
+```
