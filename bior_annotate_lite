@@ -14,12 +14,12 @@ fi
 
 
 if [ -z "$VCF" ] || [ -z "$CATALOG_DRILL" ] ; then
-  echo "USAGE:  biorAnnotateLite  <VCF>  <CATALOG_DRILL>  [OUTPUT]  [LOG_FILE]"
+  echo "USAGE:  bior_annotate_lite  <VCF>  <CATALOG_DRILL>  [OUTPUT]  [LOG_FILE]"
   echo "  Required: VCF, CATALOG_DRILL"
   echo "  Optional: OUTPUT, LOG_FILE"
   echo ""
   echo "Example:"
-  echo "  biorAnnotateLite  my.vcf  catalogDrill.txt  my.vcf.annotated.bgz"
+  echo "  bior_annotate_lite  my.vcf  catalogDrill.txt  my.vcf.annotated.bgz"
   echo ""
   echo "  WHERE:"
   echo "    catalogDrill.txt is a tab-delimited file with 3 columns like:"
