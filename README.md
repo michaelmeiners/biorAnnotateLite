@@ -55,7 +55,6 @@ cat catalogDrill.txt
 bior_same_variant       /data5/bsi/catalogs/bior/v1/dbSNP/150_GRCh37.p13/variants.v1/All_dbSNP.tsv.bgz  ID,RSPOS,dbSNPBuildId,GENEINFO
 bior_overlap    /data5/bsi/catalogs/bior/v1/omim/20180104_GRCh37.p13/disease.v1/omim_genes.tsv.bgz      MIMNumber,ApprovedSymbol,EntrezGeneID,EnsemblGeneID,Transcript
 
-```
 
 #------------------------------------------------------
 # Splitting a VCF into multiple chunks, annotating those chunks, then merging them back into one file
@@ -63,3 +62,4 @@ bior_overlap    /data5/bsi/catalogs/bior/v1/omim/20180104_GRCh37.p13/disease.v1/
 cd Test2
 ./run.sh
 
+```
