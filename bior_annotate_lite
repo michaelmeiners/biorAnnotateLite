@@ -14,12 +14,12 @@ fi
 
 
 if [ -z "$VCF" ] || [ -z "$CATALOG_DRILL" ] ; then
-  echo "USAGE:  bior_annotate_lite  <VCF>  <CATALOG_DRILL>  [OUTPUT]  [LOG_FILE]"
+  echo "USAGE:  biorAnnotateLite  <VCF>  <CATALOG_DRILL>  [OUTPUT]  [LOG_FILE]"
   echo "  Required: VCF, CATALOG_DRILL"
   echo "  Optional: OUTPUT, LOG_FILE"
   echo ""
   echo "Example:"
-  echo "  bior_annotate_lite  my.vcf  catalogDrill.txt  my.vcf.annotated.bgz"
+  echo "  biorAnnotateLite  my.vcf  catalogDrill.txt  my.vcf.annotated.bgz"
   echo ""
   echo "  WHERE:"
   echo "    catalogDrill.txt is a tab-delimited file with 3 columns like:"
@@ -78,7 +78,8 @@ done
 
 
 # We should go from VCF to TJSON, run all same_variants/overlap commands, then go from TJSON back to VCF
-FULL_CMD="$ZCAT  $VCF | bior_vcf_to_tjson  $LOG_FLAG  $CMD  |  bior_tjson_to_vcf $LOG_FLAG  |  sed 's/bior.//g'  |  bgzip -c > $OUTPUT"
+# (removing any "bior." prefixes)
+FULL_CMD="$ZCAT  $VCF | bior_vcf_to_tjson  $LOG_FLAG  $CMD  |  bior_tjson_to_vcf $LOG_FLAG  |  sed 's/bior\.//g'  |  bgzip -c > $OUTPUT"
 #echo "FULL_CMD:"
 #echo "$FULL_CMD"
 
