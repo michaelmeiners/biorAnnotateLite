@@ -56,3 +56,10 @@ bior_same_variant       /data5/bsi/catalogs/bior/v1/dbSNP/150_GRCh37.p13/variant
 bior_overlap    /data5/bsi/catalogs/bior/v1/omim/20180104_GRCh37.p13/disease.v1/omim_genes.tsv.bgz      MIMNumber,ApprovedSymbol,EntrezGeneID,EnsemblGeneID,Transcript
 
 ```
+
+#------------------------------------------------------
+# Splitting a VCF into multiple chunks, annotating those chunks, then merging them back into one file
+#------------------------------------------------------
+cd Test2
+./run.sh
+
