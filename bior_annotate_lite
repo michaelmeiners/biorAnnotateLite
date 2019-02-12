@@ -1,5 +1,21 @@
 #!/bin/bash
 
+# Exit on any error
+# set -e
+
+# Exit if any one of a set of piped commands fails
+# (returns first non-zero exit code from right-to-left)
+# NOTE: This is NOT available in standard sh
+# See: https://stackoverflow.com/questions/1550933/catching-error-codes-in-a-shell-pipe
+set -o pipefail
+
+# Same as -E
+# set -o errtrace
+# Same as -T
+# set -o functrace
+# Same as -v
+# set -o verbose
+
 VCF=$1
 CATALOG_DRILL=$2
 OUTPUT=$3
@@ -14,12 +30,12 @@ fi
 
 
 if [ -z "$VCF" ] || [ -z "$CATALOG_DRILL" ] ; then
-  echo "USAGE:  biorAnnotateLite  <VCF>  <CATALOG_DRILL>  [OUTPUT]  [LOG_FILE]"
+  echo "USAGE:  bior_annotate_lite  <VCF>  <CATALOG_DRILL>  [OUTPUT]  [LOG_FILE]"
   echo "  Required: VCF, CATALOG_DRILL"
   echo "  Optional: OUTPUT, LOG_FILE"
   echo ""
   echo "Example:"
-  echo "  biorAnnotateLite  my.vcf  catalogDrill.txt  my.vcf.annotated.bgz"
+  echo "  bior_annotate_lite  my.vcf  catalogDrill.txt  my.vcf.annotated.bgz"
   echo ""
   echo "  WHERE:"
   echo "    catalogDrill.txt is a tab-delimited file with 3 columns like:"
@@ -34,12 +50,26 @@ if [ -z "$VCF" ] || [ -z "$CATALOG_DRILL" ] ; then
   exit 1;
 fi
 
+function echoerr() {
+  msg=$1
+  >&2 echo "$msg"
+}
+
+if [ ! -f $VCF ] ; then
+  echoerr "ERROR: VCF file does not exist: $VCF"
+  exit 1
+fi
+
+if [ ! -f $CATALOG_DRILL ] ; then
+  echoerr "ERROR: Catalog-drill file does not exist: $CATALOG_DRILL"
+  exit 1
+fi
 
 #echo "VCF:           $VCF"
 #echo "CATALOG_DRILL: $CATALOG_DRILL"
 #echo "OUTPUT:        $OUTPUT"
 
-COLS=$($ZCAT  $VCF | head -2000 | grep -v "^##" | grep "^#" | tr '\t' '\n' | wc -l)
+COLS=$($ZCAT  $VCF | head -20000 | grep -v "^##" | grep "^#" | tr '\t' '\n' | wc -l)
 VCF_TO_TJSON_COL=$(($COLS+1))
 #echo "COLS: $COLS"
 #echo "VCF_TO_TJSON_COL: $VCF_TO_TJSON_COL"
@@ -57,15 +87,17 @@ fi
 
 CMD=""
 # Make newlines the only separator in FOR loop
+# echo "IFS: [$IFS]"
+OLD_IFS=$IFS
 IFS=$'\n'
 # For each line in the CATALOG_DRILL file, create a bior_same_variant or bior_overlap command
 # with corresponding bior_drill to extract the columns
 for line in `cat $CATALOG_DRILL | grep -v "^#"`; do
   #echo "line: $line"
 
-  OPERATION=$(echo $line | cut -f1)
-  CATALOG_PATH=$(echo $line | cut -f2)
-  DRILLS=$(echo $line | cut -f3 | sed 's/,/ -p /g')
+  OPERATION=$(echo "$line" | cut -f1)
+  CATALOG_PATH=$(echo "$line" | cut -f2)
+  DRILLS=$(echo "$line" | cut -f3 | sed 's/,/ -p /g')
   SUBCMD="| $OPERATION  $LOG_FLAG  -c $VCF_TO_TJSON_COL  -d $CATALOG_PATH | bior_drill $LOG_FLAG  -p $DRILLS "
   CMD="$CMD $SUBCMD"
 
@@ -75,14 +107,37 @@ for line in `cat $CATALOG_DRILL | grep -v "^#"`; do
   #echo "SUBCMD:       $SUBCMD"
   #echo "CMD:          $CMD"
 done
+#----------------------------------------------------------------------------------
+# WARNING: Make sure to set the separator back to tabs and spaces,
+#          or we will get errors calling other commands such as "zcat -f"
+#          since it will treat it as quoted and will say
+#          "zcat -f: command not found" 
+#----------------------------------------------------------------------------------
+IFS=$OLD_IFS
 
+# Check if there are any data lines.  If not, then just output the header, and give a warning
+#   We could fix this at a later time in bior_vcf_to_tjson and allow VCFs with no data lines.
+# Else, process the VCF
+NUM_DATAS=$($ZCAT "$VCF" | head -20000 | grep -v "^#" | grep -v "^ *$" | wc -l)
+if [ $NUM_DATAS -eq 0 ] ; then
+  echoerr "Warning: There are no data lines in the vcf: $VCF"
+  echoerr "Outputting just the header"
+else
+  # We should go from VCF to TJSON, run all same_variants/overlap commands, then go from TJSON back to VCF
+  # (removing any "bior." prefixes)
+  FULL_CMD="$ZCAT  $VCF | bior_vcf_to_tjson  $LOG_FLAG  $CMD  |  bior_tjson_to_vcf $LOG_FLAG  |  sed 's/bior\.//g'  |  bgzip -c > $OUTPUT"
+  #echo "FULL_CMD:"
+  #echo "$FULL_CMD"
+  eval "$FULL_CMD"
+  exitCode=$?
+  if [ $exitCode -ne 0 ] ; then
+    echoerr "==========================================================="
+    echoerr "ERROR occurred when attempting to annotate the VCF"
+    echoerr ""
+    echoerr "Command: $FULL_CMD"
+    echoerr "==========================================================="
+    exit 1
+  fi
+fi
 
-# We should go from VCF to TJSON, run all same_variants/overlap commands, then go from TJSON back to VCF
-# (removing any "bior." prefixes)
-FULL_CMD="$ZCAT  $VCF | bior_vcf_to_tjson  $LOG_FLAG  $CMD  |  bior_tjson_to_vcf $LOG_FLAG  |  sed 's/bior\.//g'  |  bgzip -c > $OUTPUT"
-#echo "FULL_CMD:"
-#echo "$FULL_CMD"
-
-
-eval "$FULL_CMD"
-
+# echo "Done."
