@@ -122,6 +122,7 @@ NUM_DATAS=$($ZCAT "$VCF" | head -20000 | grep -v "^#" | grep -v "^ *$" | wc -l)
 if [ $NUM_DATAS -eq 0 ] ; then
   echoerr "Warning: There are no data lines in the vcf: $VCF"
   echoerr "Outputting just the header"
+  $ZCAT $VCF | bgzip -c > $OUTPUT
 else
   # We should go from VCF to TJSON, run all same_variants/overlap commands, then go from TJSON back to VCF
   # (removing any "bior." prefixes)
